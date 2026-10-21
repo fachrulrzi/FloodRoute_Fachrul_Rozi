@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "780379013281",
+    "firebase_url": "https://data-banjir-87a89-default-rtdb.firebaseio.com",
+    "project_id": "data-banjir-87a89",
+    "storage_bucket": "data-banjir-87a89.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:780379013281:android:a396cfeb664f99cdeeb0e0",
+        "android_client_info": {
+          "package_name": "FloodNav.com"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDv3LI1oMCeWV8JsjrbExnXPYqm0deQz6c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:780379013281:android:8066639607fe84daeeb0e0",
+        "android_client_info": {
+          "package_name": "com.example.floodroute"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDv3LI1oMCeWV8JsjrbExnXPYqm0deQz6c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
