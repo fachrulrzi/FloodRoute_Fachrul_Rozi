@@ -1,3 +1,4 @@
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -18,7 +19,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-
   // =========================================================
   // LOCATION
   // =========================================================
@@ -28,7 +28,6 @@ class _HomePageState extends State<HomePage> {
   StreamSubscription<Position>? positionSubscription;
 
   bool loadingLocation = true;
-
 
   // =========================================================
   // ORIGIN & DESTINATION
@@ -44,7 +43,6 @@ class _HomePageState extends State<HomePage> {
   final TextEditingController destinationController =
       TextEditingController();
 
-
   // =========================================================
   // SEARCH
   // =========================================================
@@ -57,22 +55,23 @@ class _HomePageState extends State<HomePage> {
 
   Timer? searchDebounce;
 
-
   // =========================================================
   // ROUTE
   // =========================================================
 
   List<LatLng> routePoints = [];
 
-  bool loadingRoute = false;
+  double? routeDistance;
 
+  double? routeTime;
+
+  bool loadingRoute = false;
 
   // =========================================================
   // VEHICLE
   // =========================================================
 
   String selectedVehicle = 'motor';
-
 
   // =========================================================
   // FLOOD
@@ -83,7 +82,6 @@ class _HomePageState extends State<HomePage> {
   StreamSubscription<List<FloodRoad>>? floodSubscription;
 
   bool showFloodPanel = true;
-
 
   // =========================================================
   // INIT
@@ -98,6 +96,15 @@ class _HomePageState extends State<HomePage> {
     _startFloodRealtime();
   }
 
+  // =========================================================
+  // CLEAR ROUTE DATA
+  // =========================================================
+
+  void _clearRoute() {
+    routePoints = [];
+    routeDistance = null;
+    routeTime = null;
+  }
 
   // =========================================================
   // GET CURRENT LOCATION
@@ -139,7 +146,6 @@ class _HomePageState extends State<HomePage> {
 
       setState(() {
         currentLocation = location;
-
         origin = location;
 
         originController.text =
@@ -150,7 +156,6 @@ class _HomePageState extends State<HomePage> {
       });
 
       _startLocationTracking();
-
     } catch (e) {
       if (!mounted) return;
 
@@ -167,7 +172,6 @@ class _HomePageState extends State<HomePage> {
       );
     }
   }
-
 
   // =========================================================
   // LIVE GPS
@@ -191,13 +195,10 @@ class _HomePageState extends State<HomePage> {
         });
       },
       onError: (error) {
-        debugPrint(
-          'GPS STREAM ERROR: $error',
-        );
+        debugPrint('GPS STREAM ERROR: $error');
       },
     );
   }
-
 
   // =========================================================
   // SEARCH LOCATION
@@ -230,13 +231,8 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-
-  Future<void> _searchLocation(
-    String query,
-  ) async {
-    if (query.trim().isEmpty) {
-      return;
-    }
+  Future<void> _searchLocation(String query) async {
+    if (query.trim().isEmpty) return;
 
     if (!mounted) return;
 
@@ -252,16 +248,13 @@ class _HomePageState extends State<HomePage> {
 
       setState(() {
         searchResults = results;
-
         searching = false;
       });
-
     } catch (e) {
       if (!mounted) return;
 
       setState(() {
         searching = false;
-
         searchResults = [];
       });
 
@@ -275,38 +268,28 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-
   // =========================================================
   // SELECT SEARCH RESULT
   // =========================================================
 
-  void _selectSearchResult(
-    SearchResult result,
-  ) {
+  void _selectSearchResult(SearchResult result) {
     setState(() {
       if (activeSearch == 'origin') {
         origin = result.location;
-
-        originController.text =
-            result.displayName;
-
+        originController.text = result.displayName;
       } else if (activeSearch == 'destination') {
         destination = result.location;
-
-        destinationController.text =
-            result.displayName;
+        destinationController.text = result.displayName;
       }
 
       searchResults = [];
-
       activeSearch = '';
 
-      routePoints = [];
+      _clearRoute();
     });
 
     FocusScope.of(context).unfocus();
   }
-
 
   // =========================================================
   // CLEAR SEARCH
@@ -320,23 +303,19 @@ class _HomePageState extends State<HomePage> {
 
     setState(() {
       searchResults = [];
-
       activeSearch = searchType;
+
+      if (searchType == 'origin') {
+        origin = null;
+      }
+
+      if (searchType == 'destination') {
+        destination = null;
+      }
+
+      _clearRoute();
     });
-
-    if (searchType == 'origin') {
-      origin = null;
-
-      routePoints = [];
-    }
-
-    if (searchType == 'destination') {
-      destination = null;
-
-      routePoints = [];
-    }
   }
-
 
   // =========================================================
   // FIREBASE FLOOD REALTIME
@@ -345,18 +324,19 @@ class _HomePageState extends State<HomePage> {
   void _startFloodRealtime() {
     floodSubscription?.cancel();
 
-    debugPrint('🏠 HOME: MEMULAI FLOOD REALTIME');
+    debugPrint('HOME: MEMULAI FLOOD REALTIME');
 
-    floodSubscription = FloodService.watchFloodData().listen(
+    floodSubscription =
+        FloodService.watchFloodData().listen(
       (roads) {
         debugPrint(
-          '🏠 HOME: UPDATE FLOOD DITERIMA '
+          'HOME: UPDATE FLOOD DITERIMA '
           '(${roads.length} sensor)',
         );
 
         for (final road in roads) {
           debugPrint(
-            '🏠 HOME SENSOR: '
+            'HOME SENSOR: '
             '${road.sensorId} | '
             '${road.locationName} | '
             '${road.waterLevel.toStringAsFixed(2)} cm | '
@@ -372,9 +352,8 @@ class _HomePageState extends State<HomePage> {
           floodRoads = List<FloodRoad>.from(roads);
         });
 
-        // Pastikan state Home sudah menerima data terbaru.
         debugPrint(
-          '🏠 UI STATE DIPERBARUI: '
+          'UI STATE DIPERBARUI: '
           '${floodRoads.map((road) =>
             '${road.sensorId}: '
             '${road.waterLevel.toStringAsFixed(2)} cm '
@@ -383,11 +362,11 @@ class _HomePageState extends State<HomePage> {
         );
       },
       onError: (Object error, StackTrace stackTrace) {
-        debugPrint('❌ HOME: FIREBASE REALTIME ERROR: $error');
+        debugPrint('HOME: FIREBASE REALTIME ERROR: $error');
         debugPrintStack(stackTrace: stackTrace);
       },
       onDone: () {
-        debugPrint('⚠️ HOME: FIREBASE REALTIME STREAM SELESAI');
+        debugPrint('HOME: FIREBASE REALTIME STREAM SELESAI');
       },
     );
   }
@@ -397,34 +376,26 @@ class _HomePageState extends State<HomePage> {
   // =========================================================
 
   bool _hasFlood() {
-    return floodRoads.any(
-      (road) {
-        final status =
-            road.status.toLowerCase();
+    return floodRoads.any((road) {
+      final status = road.status.toLowerCase();
 
-        return status == 'banjir' ||
-            status == 'flooded';
-      },
-    );
+      return status == 'banjir' ||
+          status == 'flooded';
+    });
   }
-
 
   // =========================================================
   // CHECK WARNING STATUS
   // =========================================================
 
   bool _hasWarning() {
-    return floodRoads.any(
-      (road) {
-        final status =
-            road.status.toLowerCase();
+    return floodRoads.any((road) {
+      final status = road.status.toLowerCase();
 
-        return status == 'waspada' ||
-            status == 'warning';
-      },
-    );
+      return status == 'waspada' ||
+          status == 'warning';
+    });
   }
-
 
   // =========================================================
   // FLOOD BUTTON
@@ -432,11 +403,9 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildFloodButton() {
     final hasFlood = _hasFlood();
-
     final hasWarning = _hasWarning();
 
-    Color indicatorColor =
-        Colors.green;
+    Color indicatorColor = Colors.green;
 
     if (hasFlood) {
       indicatorColor = Colors.red;
@@ -447,15 +416,12 @@ class _HomePageState extends State<HomePage> {
     return Material(
       color: Colors.white,
       elevation: 5,
-      borderRadius:
-          BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(14),
       child: InkWell(
-        borderRadius:
-            BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(14),
         onTap: () {
           setState(() {
-            showFloodPanel =
-                !showFloodPanel;
+            showFloodPanel = !showFloodPanel;
           });
         },
         child: SizedBox(
@@ -470,7 +436,6 @@ class _HomePageState extends State<HomePage> {
                   size: 25,
                 ),
               ),
-
               if (hasFlood || hasWarning)
                 Positioned(
                   right: 7,
@@ -478,12 +443,9 @@ class _HomePageState extends State<HomePage> {
                   child: Container(
                     width: 10,
                     height: 10,
-                    decoration:
-                        BoxDecoration(
-                      color:
-                          indicatorColor,
-                      shape:
-                          BoxShape.circle,
+                    decoration: BoxDecoration(
+                      color: indicatorColor,
+                      shape: BoxShape.circle,
                     ),
                   ),
                 ),
@@ -494,18 +456,14 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-
   // =========================================================
   // SHOW FLOOD HISTORY
   // =========================================================
 
-  Future<void> _showFloodHistory(
-    FloodRoad road,
-  ) async {
-    final sensorId =
-        road.sensorId.isNotEmpty
-            ? road.sensorId
-            : road.roadId;
+  Future<void> _showFloodHistory(FloodRoad road) async {
+    final sensorId = road.sensorId.isNotEmpty
+        ? road.sensorId
+        : road.roadId;
 
     showModalBottomSheet(
       context: context,
@@ -520,91 +478,49 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-
   // =========================================================
   // FLOOD PANEL
   // =========================================================
 
   Widget _buildFloodPanel() {
+    final floodedRoads = floodRoads.where((road) {
+      final status = road.status.toLowerCase();
 
-    // ---------------------------------------------------------
-    // BANJIR
-    // ---------------------------------------------------------
+      return status == 'banjir' ||
+          status == 'flooded';
+    }).toList();
 
-    final floodedRoads =
-        floodRoads.where(
-      (road) {
-        final status =
-            road.status.toLowerCase();
+    final warningRoads = floodRoads.where((road) {
+      final status = road.status.toLowerCase();
 
-        return status == 'banjir' ||
-            status == 'flooded';
-      },
-    ).toList();
+      return status == 'waspada' ||
+          status == 'warning';
+    }).toList();
 
+    final normalRoads = floodRoads.where((road) {
+      return road.status.toLowerCase() == 'normal';
+    }).toList();
 
-    // ---------------------------------------------------------
-    // WASPADA
-    // ---------------------------------------------------------
-
-    final warningRoads =
-        floodRoads.where(
-      (road) {
-        final status =
-            road.status.toLowerCase();
-
-        return status == 'waspada' ||
-            status == 'warning';
-      },
-    ).toList();
-
-
-    // ---------------------------------------------------------
-    // NORMAL
-    // ---------------------------------------------------------
-
-    final normalRoads =
-        floodRoads.where(
-      (road) {
-        final status =
-            road.status.toLowerCase();
-
-        return status == 'normal';
-      },
-    ).toList();
-
-
-    final bool hasFlood =
-        floodedRoads.isNotEmpty;
-
-    final bool hasWarning =
-        warningRoads.isNotEmpty;
-
-    final bool hasAnyData =
-        floodRoads.isNotEmpty;
-
+    final bool hasFlood = floodedRoads.isNotEmpty;
+    final bool hasWarning = warningRoads.isNotEmpty;
+    final bool hasAnyData = floodRoads.isNotEmpty;
 
     return Container(
       width: double.infinity,
-
       margin: const EdgeInsets.only(
         left: 8,
         right: 8,
         bottom: 4,
       ),
-
-      padding:
-          const EdgeInsets.fromLTRB(
+      padding: const EdgeInsets.fromLTRB(
         14,
         10,
         14,
         10,
       ),
-
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius:
-            BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(18),
         boxShadow: const [
           BoxShadow(
             blurRadius: 10,
@@ -613,72 +529,48 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-
       child: Column(
-        mainAxisSize:
-            MainAxisSize.min,
-
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
-
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
-          // ===================================================
           // HEADER
-          // ===================================================
-
           Row(
             children: [
-
               Icon(
                 hasFlood
                     ? Icons.warning_rounded
                     : hasWarning
                         ? Icons.warning_amber_rounded
                         : Icons.water_drop,
-
                 color: hasFlood
                     ? Colors.red
                     : hasWarning
                         ? Colors.orange
                         : Colors.blue,
-
                 size: 20,
               ),
-
               const SizedBox(width: 8),
-
               const Expanded(
                 child: Text(
                   'Informasi Banjir',
                   style: TextStyle(
                     fontSize: 16,
-                    fontWeight:
-                        FontWeight.bold,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
-
               IconButton(
-                visualDensity:
-                    VisualDensity.compact,
-
-                padding:
-                    EdgeInsets.zero,
-
-                constraints:
-                    const BoxConstraints(
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
                   minWidth: 36,
                   minHeight: 36,
                 ),
-
                 onPressed: () {
                   setState(() {
-                    showFloodPanel =
-                        false;
+                    showFloodPanel = false;
                   });
                 },
-
                 icon: const Icon(
                   Icons.close,
                   size: 22,
@@ -691,180 +583,107 @@ class _HomePageState extends State<HomePage> {
 
           const SizedBox(height: 8),
 
-
-          // ===================================================
-          // TIDAK ADA DATA
-          // ===================================================
-
+          // NO DATA
           if (!hasAnyData)
             Container(
               width: double.infinity,
-
-              padding:
-                  const EdgeInsets.all(10),
-
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color:
-                    Colors.green.shade50,
-
-                borderRadius:
-                    BorderRadius.circular(10),
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(10),
               ),
-
               child: Row(
                 children: [
-
                   Icon(
                     Icons.check_circle,
-                    color:
-                        Colors.green.shade700,
+                    color: Colors.green.shade700,
                     size: 20,
                   ),
-
                   const SizedBox(width: 8),
-
                   const Expanded(
                     child: Text(
-                      'Tidak ada sensor yang '
-                      'terdeteksi banjir.',
-                      style: TextStyle(
-                        fontSize: 13,
-                      ),
+                      'Tidak ada sensor yang terdeteksi banjir.',
+                      style: TextStyle(fontSize: 13),
                     ),
                   ),
                 ],
               ),
             ),
 
-
-          // ===================================================
-          // WASPADA
-          // ===================================================
-
+          // WARNING
           if (warningRoads.isNotEmpty) ...[
             _buildFloodSectionTitle(
-              icon:
-                  Icons.warning_amber_rounded,
+              icon: Icons.warning_amber_rounded,
               title: 'WASPADA',
               color: Colors.orange,
             ),
-
             const SizedBox(height: 6),
-
             ...warningRoads.map(
-              (road) =>
-                  _buildWarningPanelItem(
-                road,
-              ),
+              (road) => _buildWarningPanelItem(road),
             ),
-
             const SizedBox(height: 4),
           ],
 
-
-          // ===================================================
-          // BANJIR
-          // ===================================================
-
+          // FLOODED
           if (floodedRoads.isNotEmpty) ...[
             _buildFloodSectionTitle(
               icon: Icons.block,
-              title:
-                  'BANJIR - TIDAK DAPAT DILALUI',
+              title: 'BANJIR - TIDAK DAPAT DILALUI',
               color: Colors.red,
             ),
-
             const SizedBox(height: 6),
-
             ...floodedRoads.map(
-              (road) =>
-                  _buildFloodPanelItem(
-                road,
-              ),
+              (road) => _buildFloodPanelItem(road),
             ),
-
             const SizedBox(height: 4),
           ],
 
-
-          // ===================================================
           // NORMAL
-          // ===================================================
-
           if (!hasWarning && !hasFlood)
             Container(
               width: double.infinity,
-
-              padding:
-                  const EdgeInsets.all(10),
-
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color:
-                    Colors.green.shade50,
-
-                borderRadius:
-                    BorderRadius.circular(10),
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(10),
               ),
-
               child: Row(
                 children: [
-
                   Icon(
                     Icons.check_circle,
-                    color:
-                        Colors.green.shade700,
+                    color: Colors.green.shade700,
                     size: 20,
                   ),
-
                   const SizedBox(width: 8),
-
                   Expanded(
                     child: Text(
                       normalRoads.isNotEmpty
-                          ? 'Semua titik sensor '
-                              'dalam kondisi normal.'
-                          : 'Tidak ada sensor '
-                              'dalam kondisi waspada '
-                              'atau banjir.',
-
-                      style:
-                          const TextStyle(
-                        fontSize: 13,
-                      ),
+                          ? 'Semua titik sensor dalam kondisi normal.'
+                          : 'Tidak ada sensor dalam kondisi waspada atau banjir.',
+                      style: const TextStyle(fontSize: 13),
                     ),
                   ),
                 ],
               ),
             ),
 
-
           const SizedBox(height: 6),
 
-
-          // ===================================================
           // REALTIME
-          // ===================================================
-
           Row(
             children: [
-
               Icon(
                 Icons.sync,
                 size: 14,
-                color:
-                    Colors.green.shade700,
+                color: Colors.green.shade700,
               ),
-
               const SizedBox(width: 5),
-
               Text(
                 'Data realtime',
                 style: TextStyle(
                   fontSize: 11,
-                  color:
-                      Colors.green.shade700,
-                  fontWeight:
-                      FontWeight.w600,
+                  color: Colors.green.shade700,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -873,7 +692,6 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-
 
   // =========================================================
   // SECTION TITLE
@@ -886,21 +704,17 @@ class _HomePageState extends State<HomePage> {
   }) {
     return Row(
       children: [
-
         Icon(
           icon,
           color: color,
           size: 17,
         ),
-
         const SizedBox(width: 6),
-
         Text(
           title,
           style: TextStyle(
             fontSize: 11,
-            fontWeight:
-                FontWeight.bold,
+            fontWeight: FontWeight.bold,
             color: color,
           ),
         ),
@@ -908,354 +722,107 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-
   // =========================================================
-  // WASPADA ITEM
+  // WARNING ITEM
   // =========================================================
 
-  Widget _buildWarningPanelItem(
-    FloodRoad road,
-  ) {
+  Widget _buildWarningPanelItem(FloodRoad road) {
     return Material(
       color: Colors.transparent,
-
       child: InkWell(
-        borderRadius:
-            BorderRadius.circular(10),
-
+        borderRadius: BorderRadius.circular(10),
         onTap: () {
           _showFloodHistory(road);
         },
-
         child: Container(
           width: double.infinity,
-
-          padding:
-              const EdgeInsets.all(10),
-
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: Colors.orange.shade50,
-
-            borderRadius:
-                BorderRadius.circular(10),
-
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color:
-                  Colors.orange.shade200,
+              color: Colors.orange.shade200,
             ),
           ),
-
           child: Row(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
-
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
-              // ICON
               Container(
                 width: 34,
                 height: 34,
-
-                decoration:
-                    BoxDecoration(
-                  color:
-                      Colors.orange.shade100,
-                  shape:
-                      BoxShape.circle,
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade100,
+                  shape: BoxShape.circle,
                 ),
-
                 child: Icon(
                   Icons.warning_amber_rounded,
-                  color:
-                      Colors.orange.shade800,
+                  color: Colors.orange.shade800,
                   size: 20,
                 ),
               ),
-
               const SizedBox(width: 9),
-
-
-              // INFO
               Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
-
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-
                     Text(
                       road.locationName,
                       maxLines: 1,
-                      overflow:
-                          TextOverflow.ellipsis,
-
-                      style:
-                          const TextStyle(
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
                         fontSize: 13,
-                        fontWeight:
-                            FontWeight.bold,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-
                     const SizedBox(height: 3),
-
                     Text(
                       'Sensor: ${road.sensorId}',
-                      style:
-                          const TextStyle(
+                      style: const TextStyle(
                         fontSize: 11,
                         color: Colors.grey,
                       ),
                     ),
-
                     const SizedBox(height: 3),
-
-                    Text(
-                      'Ketinggian air: '
-                      'Ketinggian air: ${road.waterLevel} cm',
-
-                      style:
-                          const TextStyle(
-                        fontSize: 12,
-                      ),
-                    ),
-
-                    const SizedBox(height: 5),
-
-                    Row(
-                      children: [
-
-                        Container(
-                          padding:
-                              const EdgeInsets.symmetric(
-                            horizontal: 7,
-                            vertical: 3,
-                          ),
-
-                          decoration:
-                              BoxDecoration(
-                            color:
-                                Colors.orange,
-
-                            borderRadius:
-                                BorderRadius.circular(
-                              20,
-                            ),
-                          ),
-
-                          child: const Text(
-                            'WASPADA',
-                            style:
-                                TextStyle(
-                              color:
-                                  Colors.white,
-                              fontSize: 10,
-                              fontWeight:
-                                  FontWeight.bold,
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(width: 7),
-
-                        Expanded(
-                          child: Text(
-                            'Klik untuk melihat histori',
-
-                            style: TextStyle(
-                              fontSize: 11,
-                              color:
-                                  Colors.orange.shade900,
-                            ),
-                          ),
-                        ),
-
-                        Icon(
-                          Icons.chevron_right,
-                          size: 20,
-                          color:
-                              Colors.orange.shade700,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-
-  // =========================================================
-  // BANJIR ITEM
-  // =========================================================
-
-  Widget _buildFloodPanelItem(
-    FloodRoad road,
-  ) {
-    return Material(
-      color: Colors.transparent,
-
-      child: InkWell(
-        borderRadius:
-            BorderRadius.circular(10),
-
-        onTap: () {
-          _showFloodHistory(road);
-        },
-
-        child: Container(
-          width: double.infinity,
-
-          padding:
-              const EdgeInsets.all(10),
-
-          decoration: BoxDecoration(
-            color: Colors.red.shade50,
-
-            borderRadius:
-                BorderRadius.circular(10),
-
-            border: Border.all(
-              color:
-                  Colors.red.shade200,
-            ),
-          ),
-
-          child: Row(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
-
-            children: [
-
-              // ICON
-              Container(
-                width: 34,
-                height: 34,
-
-                decoration:
-                    BoxDecoration(
-                  color:
-                      Colors.red.shade100,
-                  shape:
-                      BoxShape.circle,
-                ),
-
-                child: Icon(
-                  Icons.block,
-                  color:
-                      Colors.red.shade700,
-                  size: 20,
-                ),
-              ),
-
-              const SizedBox(width: 9),
-
-
-              // INFO
-              Expanded(
-                child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
-
-                  children: [
-
-                    Text(
-                      road.locationName,
-                      maxLines: 1,
-                      overflow:
-                          TextOverflow.ellipsis,
-
-                      style:
-                          const TextStyle(
-                        fontSize: 13,
-                        fontWeight:
-                            FontWeight.bold,
-                      ),
-                    ),
-
-                    const SizedBox(height: 3),
-
-                    Text(
-                      'Sensor: ${road.sensorId}',
-                      style:
-                          const TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey,
-                      ),
-                    ),
-
-                    const SizedBox(height: 3),
-
                     Text(
                       'Ketinggian air: '
                       '${road.waterLevel.toStringAsFixed(1)} cm',
-
-                      style:
-                          const TextStyle(
-                        fontSize: 12,
-                      ),
+                      style: const TextStyle(fontSize: 12),
                     ),
-
                     const SizedBox(height: 5),
-
                     Row(
                       children: [
-
                         Container(
-                          padding:
-                              const EdgeInsets.symmetric(
+                          padding: const EdgeInsets.symmetric(
                             horizontal: 7,
                             vertical: 3,
                           ),
-
-                          decoration:
-                              BoxDecoration(
-                            color: Colors.red,
-
-                            borderRadius:
-                                BorderRadius.circular(
-                              20,
-                            ),
+                          decoration: BoxDecoration(
+                            color: Colors.orange,
+                            borderRadius: BorderRadius.circular(20),
                           ),
-
                           child: const Text(
-                            'BANJIR',
-                            style:
-                                TextStyle(
-                              color:
-                                  Colors.white,
+                            'WASPADA',
+                            style: TextStyle(
+                              color: Colors.white,
                               fontSize: 10,
-                              fontWeight:
-                                  FontWeight.bold,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
-
                         const SizedBox(width: 7),
-
                         Expanded(
                           child: Text(
                             'Klik untuk melihat histori',
-
                             style: TextStyle(
                               fontSize: 11,
-                              color:
-                                  Colors.red.shade700,
-                              fontWeight:
-                                  FontWeight.w500,
+                              color: Colors.orange.shade900,
                             ),
                           ),
                         ),
-
                         Icon(
                           Icons.chevron_right,
                           size: 20,
-                          color:
-                              Colors.red.shade700,
+                          color: Colors.orange.shade700,
                         ),
                       ],
                     ),
@@ -1269,12 +836,125 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // =========================================================
+  // FLOODED ITEM
+  // =========================================================
+
+  Widget _buildFloodPanelItem(FloodRoad road) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: () {
+          _showFloodHistory(road);
+        },
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Colors.red.shade50,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: Colors.red.shade200,
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: Colors.red.shade100,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.block,
+                  color: Colors.red.shade700,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      road.locationName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      'Sensor: ${road.sensorId}',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      'Ketinggian air: '
+                      '${road.waterLevel.toStringAsFixed(1)} cm',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    const SizedBox(height: 5),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text(
+                            'BANJIR',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 7),
+                        Expanded(
+                          child: Text(
+                            'Klik untuk melihat histori',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.red.shade700,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        Icon(
+                          Icons.chevron_right,
+                          size: 20,
+                          color: Colors.red.shade700,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   // =========================================================
   // FIND ROUTE
   // =========================================================
 
-  
   Future<void> _findRoute() async {
     if (origin == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1296,11 +976,11 @@ class _HomePageState extends State<HomePage> {
 
     setState(() {
       loadingRoute = true;
-      routePoints = [];
+      _clearRoute();
     });
 
     try {
-      final points = await GraphHopperService.getRoute(
+      final result = await GraphHopperService.getRoute(
         origin: origin!,
         destination: destination!,
         floodRoads: floodRoads,
@@ -1310,7 +990,9 @@ class _HomePageState extends State<HomePage> {
       if (!mounted) return;
 
       setState(() {
-        routePoints = points;
+        routePoints = result.points;
+        routeDistance = result.distanceMeters;
+        routeTime = result.timeMilliseconds;
         loadingRoute = false;
       });
 
@@ -1328,7 +1010,7 @@ class _HomePageState extends State<HomePage> {
 
       setState(() {
         loadingRoute = false;
-        routePoints = [];
+        _clearRoute();
       });
 
       if (_isNoSafeRouteError(e)) {
@@ -1344,6 +1026,10 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  // =========================================================
+  // NO SAFE ROUTE CHECK
+  // =========================================================
+
   bool _isNoSafeRouteError(Object error) {
     final message = error.toString().toLowerCase();
 
@@ -1355,6 +1041,10 @@ class _HomePageState extends State<HomePage> {
         message.contains('no safe route') ||
         message.contains('no route found');
   }
+
+  // =========================================================
+  // NO SAFE ROUTE DIALOG
+  // =========================================================
 
   Future<void> _showNoSafeRouteNotification() async {
     if (!mounted) return;
@@ -1406,99 +1096,66 @@ class _HomePageState extends State<HomePage> {
   // =========================================================
 
   void _startNavigation() {
+    if (routePoints.isEmpty) return;
 
-    if (routePoints.isEmpty) {
-      return;
-    }
-
-    ScaffoldMessenger.of(context)
-        .showSnackBar(
+    ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text(
-          'Navigasi dimulai',
-        ),
+        content: Text('Navigasi dimulai'),
       ),
     );
   }
-
 
   // =========================================================
   // SWAP
   // =========================================================
 
   void _swapLocations() {
-
     final oldOrigin = origin;
-
     final oldDestination = destination;
 
-    final oldOriginText =
-        originController.text;
-
-    final oldDestinationText =
-        destinationController.text;
-
+    final oldOriginText = originController.text;
+    final oldDestinationText = destinationController.text;
 
     setState(() {
-
       origin = oldDestination;
-
       destination = oldOrigin;
 
-      originController.text =
-          oldDestinationText;
+      originController.text = oldDestinationText;
+      destinationController.text = oldOriginText;
 
-      destinationController.text =
-          oldOriginText;
-
-      routePoints = [];
+      _clearRoute();
     });
   }
-
 
   // =========================================================
   // VEHICLE SELECTOR
   // =========================================================
 
   Widget _buildVehicleSelector() {
-
     return Container(
       margin: const EdgeInsets.only(
         top: 12,
         bottom: 4,
       ),
-
-      padding:
-          const EdgeInsets.all(6),
-
+      padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
         color: Colors.grey.shade100,
-
-        borderRadius:
-            BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12),
       ),
-
       child: Row(
         children: [
-
           Expanded(
-            child:
-                _buildVehicleButton(
+            child: _buildVehicleButton(
               value: 'car',
-              icon:
-                  Icons.directions_car,
+              icon: Icons.directions_car,
               label: 'Mobil',
             ),
           ),
-
           const SizedBox(width: 6),
-
           Expanded(
-            child:
-                _buildVehicleButton(
+            child: _buildVehicleButton(
               value: 'motor',
-              icon:
-                  Icons.two_wheeler,
+              icon: Icons.two_wheeler,
               label: 'Motor',
             ),
           ),
@@ -1507,69 +1164,43 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-
   Widget _buildVehicleButton({
     required String value,
     required IconData icon,
     required String label,
   }) {
-
-    final bool selected =
-        selectedVehicle == value;
-
+    final bool selected = selectedVehicle == value;
 
     return GestureDetector(
       onTap: () {
+        if (selected) return;
 
         setState(() {
-
           selectedVehicle = value;
-
-          routePoints = [];
+          _clearRoute();
         });
       },
-
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(
+        padding: const EdgeInsets.symmetric(
           vertical: 12,
         ),
-
         decoration: BoxDecoration(
-          color: selected
-              ? Colors.blue
-              : Colors.transparent,
-
-          borderRadius:
-              BorderRadius.circular(10),
+          color: selected ? Colors.blue : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
         ),
-
         child: Row(
-          mainAxisAlignment:
-              MainAxisAlignment.center,
-
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-
             Icon(
               icon,
-
-              color: selected
-                  ? Colors.white
-                  : Colors.black87,
+              color: selected ? Colors.white : Colors.black87,
             ),
-
             const SizedBox(width: 8),
-
             Text(
               label,
-
               style: TextStyle(
-                color: selected
-                    ? Colors.white
-                    : Colors.black87,
-
-                fontWeight:
-                    FontWeight.bold,
+                color: selected ? Colors.white : Colors.black87,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ],
@@ -1577,7 +1208,6 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-
 
   // =========================================================
   // SEARCH FIELD
@@ -1589,56 +1219,36 @@ class _HomePageState extends State<HomePage> {
     required String searchType,
     required IconData icon,
   }) {
-
     return TextField(
       controller: controller,
-
       onTap: () {
         setState(() {
           activeSearch = searchType;
         });
       },
-
       onChanged: (value) {
-        _onSearchChanged(
-          value,
-          searchType,
-        );
+        _onSearchChanged(value, searchType);
       },
-
       decoration: InputDecoration(
         hintText: hint,
-
         prefixIcon: Icon(
           icon,
           size: 22,
-          color:
-              Colors.blueGrey.shade700,
+          color: Colors.blueGrey.shade700,
         ),
-
-        suffixIcon:
-            controller.text.isNotEmpty
-                ? IconButton(
-                    icon: Icon(
-                      Icons.clear,
-                      color: Colors
-                          .blueGrey
-                          .shade700,
-                    ),
-
-                    onPressed: () {
-                      _clearSearch(
-                        controller,
-                        searchType,
-                      );
-                    },
-                  )
-                : null,
-
+        suffixIcon: controller.text.isNotEmpty
+            ? IconButton(
+                icon: Icon(
+                  Icons.clear,
+                  color: Colors.blueGrey.shade700,
+                ),
+                onPressed: () {
+                  _clearSearch(controller, searchType);
+                },
+              )
+            : null,
         border: InputBorder.none,
-
-        contentPadding:
-            const EdgeInsets.symmetric(
+        contentPadding: const EdgeInsets.symmetric(
           horizontal: 10,
           vertical: 14,
         ),
@@ -1646,115 +1256,71 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-
   // =========================================================
   // SEARCH RESULTS
   // =========================================================
 
   Widget _buildSearchResults() {
-
     if (searching) {
       return Container(
-        margin:
-            const EdgeInsets.only(
-          top: 5,
-        ),
-
-        padding:
-            const EdgeInsets.all(16),
-
+        margin: const EdgeInsets.only(top: 5),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
-
-          borderRadius:
-              BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(12),
         ),
-
         child: const Row(
           children: [
-
             SizedBox(
               width: 20,
               height: 20,
-
-              child:
-                  CircularProgressIndicator(
+              child: CircularProgressIndicator(
                 strokeWidth: 2,
               ),
             ),
-
             SizedBox(width: 12),
-
-            Text(
-              'Mencari lokasi...',
-            ),
+            Text('Mencari lokasi...'),
           ],
         ),
       );
     }
 
-
     if (searchResults.isEmpty) {
       return const SizedBox.shrink();
     }
 
-
     return Container(
-      margin:
-          const EdgeInsets.only(
-        top: 5,
-      ),
-
-      constraints:
-          const BoxConstraints(
+      margin: const EdgeInsets.only(top: 5),
+      constraints: const BoxConstraints(
         maxHeight: 300,
       ),
-
       decoration: BoxDecoration(
         color: Colors.white,
-
-        borderRadius:
-            BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12),
       ),
-
       child: ListView.builder(
         shrinkWrap: true,
-
-        itemCount:
-            searchResults.length,
-
-        itemBuilder:
-            (context, index) {
-
-          final result =
-              searchResults[index];
-
+        itemCount: searchResults.length,
+        itemBuilder: (context, index) {
+          final result = searchResults[index];
 
           return ListTile(
             leading: Icon(
               Icons.location_on,
-              color:
-                  Colors.blueGrey.shade700,
+              color: Colors.blueGrey.shade700,
             ),
-
             title: Text(
               result.name,
               maxLines: 1,
-              overflow:
-                  TextOverflow.ellipsis,
+              overflow: TextOverflow.ellipsis,
             ),
-
             subtitle: Text(
               result.displayName,
               maxLines: 2,
-              overflow:
-                  TextOverflow.ellipsis,
+              overflow: TextOverflow.ellipsis,
             ),
-
             onTap: () {
-              _selectSearchResult(
-                result,
-              );
+              _selectSearchResult(result);
             },
           );
         },
@@ -1762,41 +1328,149 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // =========================================================
+  // ROUTE INFO PANEL
+  // =========================================================
+
+  Widget _buildRouteInfo() {
+    if (routeDistance == null || routeTime == null) {
+      return const SizedBox.shrink();
+    }
+
+    final distance = RouteResult(
+      points: routePoints,
+      distanceMeters: routeDistance!,
+      timeMilliseconds: routeTime!,
+    );
+
+    return Container(
+      margin: const EdgeInsets.only(
+        top: 12,
+        bottom: 4,
+      ),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                selectedVehicle == 'motor'
+                    ? Icons.two_wheeler
+                    : Icons.directions_car,
+                color: Colors.blue.shade700,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  selectedVehicle == 'motor'
+                      ? 'Rute untuk motor'
+                      : 'Rute untuk mobil',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _clearRoute();
+                  });
+                },
+                child: const Text('Ubah'),
+              ),
+            ],
+          ),
+          const Divider(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildRouteMetric(
+                  icon: Icons.route,
+                  label: 'Jarak',
+                  value: distance.formattedDistance,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildRouteMetric(
+                  icon: Icons.access_time,
+                  label: 'Estimasi waktu',
+                  value: distance.formattedDuration,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRouteMetric({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          color: Colors.blue.shade700,
+          size: 22,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.grey,
+                  fontSize: 11,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 
   // =========================================================
   // BOTTOM PANEL
   // =========================================================
 
   Widget _buildBottomPanel() {
-
-    final bool hasDestination =
-        destination != null;
-
-    final bool routeReady =
-        routePoints.length > 1;
-
+    final bool hasDestination = destination != null;
+    final bool routeReady = routePoints.length > 1;
 
     return Container(
       width: double.infinity,
-
-      padding:
-          const EdgeInsets.fromLTRB(
+      padding: const EdgeInsets.fromLTRB(
         14,
         12,
         14,
         12,
       ),
-
-      decoration:
-          const BoxDecoration(
+      decoration: const BoxDecoration(
         color: Colors.white,
-
-        borderRadius:
-            BorderRadius.vertical(
-          top:
-              Radius.circular(24),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(24),
         ),
-
         boxShadow: [
           BoxShadow(
             blurRadius: 10,
@@ -1805,44 +1479,29 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-
       child: Column(
-        mainAxisSize:
-            MainAxisSize.min,
-
+        mainAxisSize: MainAxisSize.min,
         children: [
-
-          // ===================================================
           // HEADER
-          // ===================================================
-
           Row(
             children: [
-
               const Icon(
                 Icons.route,
                 size: 27,
                 color: Colors.blue,
               ),
-
               const SizedBox(width: 12),
-
               Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
-
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-
                     const Text(
                       'FloodRoute',
                       style: TextStyle(
                         fontSize: 18,
-                        fontWeight:
-                            FontWeight.bold,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-
                     Text(
                       !hasDestination
                           ? 'Pilih tujuan untuk mulai'
@@ -1851,9 +1510,7 @@ class _HomePageState extends State<HomePage> {
                               : routeReady
                                   ? 'Rute tersedia'
                                   : 'Siap mencari rute',
-
-                      style:
-                          const TextStyle(
+                      style: const TextStyle(
                         color: Colors.grey,
                         fontSize: 13,
                       ),
@@ -1864,153 +1521,51 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
 
-
-          // ===================================================
-          // VEHICLE
-          // ===================================================
-
-          if (hasDestination &&
-              !routeReady &&
-              !loadingRoute)
+          // VEHICLE SELECTOR
+          if (hasDestination && !routeReady && !loadingRoute)
             _buildVehicleSelector(),
 
-
-          // ===================================================
-          // ROUTE INFO
-          // ===================================================
-
-          if (routeReady)
-            Container(
-              margin:
-                  const EdgeInsets.only(
-                top: 12,
-                bottom: 4,
-              ),
-
-              padding:
-                  const EdgeInsets.all(12),
-
-              decoration: BoxDecoration(
-                color:
-                    Colors.blue.shade50,
-
-                borderRadius:
-                    BorderRadius.circular(
-                  12,
-                ),
-              ),
-
-              child: Row(
-                children: [
-
-                  Icon(
-                    selectedVehicle ==
-                            'motor'
-                        ? Icons.two_wheeler
-                        : Icons.directions_car,
-
-                    color: Colors.blue,
-                  ),
-
-                  const SizedBox(width: 10),
-
-                  Expanded(
-                    child: Text(
-                      selectedVehicle ==
-                              'motor'
-                          ? 'Rute untuk motor'
-                          : 'Rute untuk mobil',
-
-                      style:
-                          const TextStyle(
-                        fontWeight:
-                            FontWeight.bold,
-                      ),
-                    ),
-                  ),
-
-                  TextButton(
-                    onPressed: () {
-                      setState(() {
-                        routePoints = [];
-                      });
-                    },
-
-                    child:
-                        const Text(
-                      'Ubah',
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
+          // ROUTE INFORMATION
+          if (routeReady) _buildRouteInfo(),
 
           const SizedBox(height: 10),
 
-
-          // ===================================================
           // MAIN BUTTON
-          // ===================================================
-
           SizedBox(
             width: double.infinity,
             height: 52,
-
-            child:
-                ElevatedButton(
-              onPressed:
-                  loadingRoute
-                      ? null
-                      : routeReady
-                          ? _startNavigation
-                          : hasDestination
-                              ? _findRoute
-                              : null,
-
-              style:
-                  ElevatedButton.styleFrom(
-                backgroundColor:
-                    Colors.blue,
-
-                foregroundColor:
-                    Colors.white,
-
-                disabledBackgroundColor:
-                    Colors.grey.shade400,
-
-                shape:
-                    RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.circular(
-                    14,
-                  ),
+            child: ElevatedButton(
+              onPressed: loadingRoute
+                  ? null
+                  : routeReady
+                      ? _startNavigation
+                      : hasDestination
+                          ? _findRoute
+                          : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: Colors.grey.shade400,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
                 ),
               ),
-
               child: loadingRoute
                   ? const SizedBox(
                       width: 24,
                       height: 24,
-
-                      child:
-                          CircularProgressIndicator(
-                        color:
-                            Colors.white,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
                         strokeWidth: 3,
                       ),
                     )
-
                   : Text(
                       routeReady
                           ? 'MULAI NAVIGASI'
                           : 'CARI RUTE',
-
-                      style:
-                          const TextStyle(
+                      style: const TextStyle(
                         fontSize: 16,
-                        fontWeight:
-                            FontWeight.bold,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
             ),
@@ -2020,30 +1575,21 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-
   // =========================================================
   // BOTTOM AREA
   // =========================================================
 
   Widget _buildBottomArea() {
-
     return Positioned(
       left: 0,
       right: 0,
       bottom: 0,
-
       child: SafeArea(
         top: false,
-
         child: Column(
-          mainAxisSize:
-              MainAxisSize.min,
-
+          mainAxisSize: MainAxisSize.min,
           children: [
-
-            if (showFloodPanel)
-              _buildFloodPanel(),
-
+            if (showFloodPanel) _buildFloodPanel(),
             _buildBottomPanel(),
           ],
         ),
@@ -2051,103 +1597,56 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-
   // =========================================================
   // BUILD
   // =========================================================
 
   @override
   Widget build(BuildContext context) {
-
-    if (loadingLocation ||
-        currentLocation == null) {
-
+    if (loadingLocation || currentLocation == null) {
       return const Scaffold(
         body: Center(
-          child:
-              CircularProgressIndicator(),
+          child: CircularProgressIndicator(),
         ),
       );
     }
 
-
     return Scaffold(
       body: Stack(
         children: [
-
-          // =================================================
           // MAP
-          // =================================================
-
           Positioned.fill(
             child: MapView(
-              currentLocation:
-                  currentLocation!,
-
+              currentLocation: currentLocation!,
               origin: origin,
-
-              destination:
-                  destination,
-
-              routePoints:
-                  routePoints,
-
-              floodRoads:
-                  floodRoads,
+              destination: destination,
+              routePoints: routePoints,
+              floodRoads: floodRoads,
             ),
           ),
 
-
-          // =================================================
           // TOP SEARCH PANEL
-          // =================================================
-
           SafeArea(
             child: Padding(
-              padding:
-                  const EdgeInsets.all(12),
-
+              padding: const EdgeInsets.all(12),
               child: Column(
                 children: [
-
                   Material(
                     elevation: 5,
-
-                    borderRadius:
-                        BorderRadius.circular(
-                      16,
-                    ),
-
+                    borderRadius: BorderRadius.circular(16),
                     child: Container(
-                      decoration:
-                          BoxDecoration(
+                      decoration: BoxDecoration(
                         color: Colors.white,
-
-                        borderRadius:
-                            BorderRadius.circular(
-                          16,
-                        ),
+                        borderRadius: BorderRadius.circular(16),
                       ),
-
                       child: Column(
                         children: [
-
-                          // ---------------------------------
                           // ORIGIN
-                          // ---------------------------------
-
                           _buildSearchField(
-                            hint:
-                                'Lokasi awal',
-
-                            controller:
-                                originController,
-
-                            searchType:
-                                'origin',
-
-                            icon: Icons
-                                .radio_button_checked,
+                            hint: 'Lokasi awal',
+                            controller: originController,
+                            searchType: 'origin',
+                            icon: Icons.radio_button_checked,
                           ),
 
                           const Divider(
@@ -2156,45 +1655,23 @@ class _HomePageState extends State<HomePage> {
                             endIndent: 50,
                           ),
 
-
-                          // ---------------------------------
                           // DESTINATION
-                          // ---------------------------------
-
                           _buildSearchField(
-                            hint:
-                                'Cari tujuan',
-
-                            controller:
-                                destinationController,
-
-                            searchType:
-                                'destination',
-
-                            icon: Icons
-                                .location_on,
+                            hint: 'Cari tujuan',
+                            controller: destinationController,
+                            searchType: 'destination',
+                            icon: Icons.location_on,
                           ),
 
-
-                          // ---------------------------------
                           // SWAP
-                          // ---------------------------------
-
                           Align(
-                            alignment:
-                                Alignment.centerRight,
-
-                            child:
-                                IconButton(
+                            alignment: Alignment.centerRight,
+                            child: IconButton(
                               icon: Icon(
                                 Icons.swap_vert,
-                                color: Colors
-                                    .blueGrey
-                                    .shade700,
+                                color: Colors.blueGrey.shade700,
                               ),
-
-                              onPressed:
-                                  _swapLocations,
+                              onPressed: _swapLocations,
                             ),
                           ),
                         ],
@@ -2202,44 +1679,29 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
 
-
-                  // -------------------------------------------
                   // SEARCH RESULTS
-                  // -------------------------------------------
-
                   _buildSearchResults(),
                 ],
               ),
             ),
           ),
 
-
-          // =================================================
           // FLOOD BUTTON
-          // =================================================
-
           if (!showFloodPanel)
             Positioned(
               right: 12,
               top: 150,
-
               child: SafeArea(
-                child:
-                    _buildFloodButton(),
+                child: _buildFloodButton(),
               ),
             ),
 
-
-          // =================================================
           // BOTTOM AREA
-          // =================================================
-
           _buildBottomArea(),
         ],
       ),
     );
   }
-
 
   // =========================================================
   // DISPOSE
@@ -2247,30 +1709,22 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
-
     searchDebounce?.cancel();
-
     positionSubscription?.cancel();
-
     floodSubscription?.cancel();
 
     originController.dispose();
-
     destinationController.dispose();
 
     super.dispose();
   }
 }
 
-
 // ################################################################
-// #
-// #                     FLOOD HISTORY SHEET
-// #
+// FLOOD HISTORY SHEET
 // ################################################################
 
 class _FloodHistorySheet extends StatefulWidget {
-
   final FloodRoad road;
 
   final String sensorId;
@@ -2285,17 +1739,12 @@ class _FloodHistorySheet extends StatefulWidget {
       _FloodHistorySheetState();
 }
 
-
-class _FloodHistorySheetState
-    extends State<_FloodHistorySheet> {
-
+class _FloodHistorySheetState extends State<_FloodHistorySheet> {
   // =========================================================
   // STATE
   // =========================================================
 
-  late Future<List<FloodHistory>>
-      _historyFuture;
-
+  late Future<List<FloodHistory>> _historyFuture;
 
   // =========================================================
   // INIT
@@ -2305,79 +1754,40 @@ class _FloodHistorySheetState
   void initState() {
     super.initState();
 
-    _historyFuture =
-        FloodService.getFloodHistory(
+    _historyFuture = FloodService.getFloodHistory(
       widget.sensorId,
     );
   }
-
 
   // =========================================================
   // FORMAT TIME
   // =========================================================
 
-  String _formatTimestamp(
-    int? timestamp,
-  ) {
-
+  String _formatTimestamp(int? timestamp) {
     if (timestamp == null) {
       return '-';
     }
 
     final date =
-        DateTime.fromMillisecondsSinceEpoch(
-      timestamp,
-    ).toLocal();
+        DateTime.fromMillisecondsSinceEpoch(timestamp).toLocal();
 
-    final day =
-        date.day.toString().padLeft(
-          2,
-          '0',
-        );
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final year = date.year.toString();
 
-    final month =
-        date.month.toString().padLeft(
-          2,
-          '0',
-        );
+    final hour = date.hour.toString().padLeft(2, '0');
+    final minute = date.minute.toString().padLeft(2, '0');
+    final second = date.second.toString().padLeft(2, '0');
 
-    final year =
-        date.year.toString();
-
-    final hour =
-        date.hour.toString().padLeft(
-          2,
-          '0',
-        );
-
-    final minute =
-        date.minute.toString().padLeft(
-          2,
-          '0',
-        );
-
-    final second =
-        date.second.toString().padLeft(
-          2,
-          '0',
-        );
-
-    return '$day/$month/$year '
-        '$hour:$minute:$second';
+    return '$day/$month/$year $hour:$minute:$second';
   }
-
 
   // =========================================================
   // STATUS COLOR
   // =========================================================
 
-  Color _statusColor(
-    String status,
-  ) {
-
-    switch (
-        status.toLowerCase()) {
-
+  Color _statusColor(String status) {
+    switch (status.toLowerCase()) {
       case 'banjir':
       case 'flooded':
         return Colors.red;
@@ -2391,18 +1801,12 @@ class _FloodHistorySheetState
     }
   }
 
-
   // =========================================================
   // STATUS ICON
   // =========================================================
 
-  IconData _statusIcon(
-    String status,
-  ) {
-
-    switch (
-        status.toLowerCase()) {
-
+  IconData _statusIcon(String status) {
+    switch (status.toLowerCase()) {
       case 'banjir':
       case 'flooded':
         return Icons.block;
@@ -2416,71 +1820,35 @@ class _FloodHistorySheetState
     }
   }
 
-
   // =========================================================
   // BUILD HISTORY ITEM
   // =========================================================
 
-  Widget _buildHistoryItem(
-    FloodHistory history,
-  ) {
-
-    final color =
-        _statusColor(
-      history.status,
-    );
-
-    final icon =
-        _statusIcon(
-      history.status,
-    );
-
+  Widget _buildHistoryItem(FloodHistory history) {
+    final color = _statusColor(history.status);
+    final icon = _statusIcon(history.status);
 
     return Container(
-      margin:
-          const EdgeInsets.only(
-        bottom: 8,
-      ),
-
-      padding:
-          const EdgeInsets.all(11),
-
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(11),
       decoration: BoxDecoration(
-        color:
-            color.withOpacity(0.06),
-
-        borderRadius:
-            BorderRadius.circular(12),
-
+        color: color.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color:
-              color.withOpacity(0.20),
+          color: color.withOpacity(0.20),
         ),
       ),
-
       child: Row(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
-
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
-          // =================================================
           // ICON
-          // =================================================
-
           Container(
             width: 36,
             height: 36,
-
-            decoration:
-                BoxDecoration(
-              color:
-                  color.withOpacity(0.12),
-
-              shape:
-                  BoxShape.circle,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.12),
+              shape: BoxShape.circle,
             ),
-
             child: Icon(
               icon,
               color: color,
@@ -2490,63 +1858,37 @@ class _FloodHistorySheetState
 
           const SizedBox(width: 10),
 
-
-          // =================================================
           // DATA
-          // =================================================
-
           Expanded(
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
-
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
                 Row(
                   children: [
-
                     Expanded(
                       child: Text(
-                        _formatTimestamp(
-                          history.timestamp,
-                        ),
-
-                        style:
-                            const TextStyle(
+                        _formatTimestamp(history.timestamp),
+                        style: const TextStyle(
                           fontSize: 11,
                           color: Colors.grey,
                         ),
                       ),
                     ),
-
                     Container(
-                      padding:
-                          const EdgeInsets.symmetric(
+                      padding: const EdgeInsets.symmetric(
                         horizontal: 7,
                         vertical: 3,
                       ),
-
-                      decoration:
-                          BoxDecoration(
+                      decoration: BoxDecoration(
                         color: color,
-
-                        borderRadius:
-                            BorderRadius.circular(
-                          20,
-                        ),
+                        borderRadius: BorderRadius.circular(20),
                       ),
-
                       child: Text(
-                        history.status
-                            .toUpperCase(),
-
-                        style:
-                            const TextStyle(
-                          color:
-                              Colors.white,
+                        history.status.toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white,
                           fontSize: 9,
-                          fontWeight:
-                              FontWeight.bold,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
@@ -2557,12 +1899,9 @@ class _FloodHistorySheetState
 
                 Text(
                   '${history.waterLevel} cm',
-
-                  style:
-                      const TextStyle(
+                  style: const TextStyle(
                     fontSize: 17,
-                    fontWeight:
-                        FontWeight.bold,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
 
@@ -2570,27 +1909,21 @@ class _FloodHistorySheetState
 
                 Row(
                   children: [
-
                     Expanded(
                       child: Text(
                         'Sensor 1: '
                         '${history.sensor1.toStringAsFixed(1)} cm',
-
-                        style:
-                            const TextStyle(
+                        style: const TextStyle(
                           fontSize: 10,
                           color: Colors.grey,
                         ),
                       ),
                     ),
-
                     Expanded(
                       child: Text(
                         'Sensor 2: '
                         '${history.sensor2.toStringAsFixed(1)} cm',
-
-                        style:
-                            const TextStyle(
+                        style: const TextStyle(
                           fontSize: 10,
                           color: Colors.grey,
                         ),
@@ -2601,32 +1934,21 @@ class _FloodHistorySheetState
 
                 if (history.anomaly)
                   Padding(
-                    padding:
-                        const EdgeInsets.only(
-                      top: 5,
-                    ),
-
+                    padding: const EdgeInsets.only(top: 5),
                     child: Row(
                       children: [
-
-                        Icon(
+                        const Icon(
                           Icons.warning,
                           size: 13,
                           color: Colors.deepOrange,
                         ),
-
-                        const SizedBox(
-                          width: 4,
-                        ),
-
+                        const SizedBox(width: 4),
                         Text(
                           'Anomaly terdeteksi',
                           style: TextStyle(
                             fontSize: 10,
-                            color:
-                                Colors.deepOrange.shade700,
-                            fontWeight:
-                                FontWeight.w600,
+                            color: Colors.deepOrange.shade700,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
@@ -2640,79 +1962,48 @@ class _FloodHistorySheetState
     );
   }
 
-
   // =========================================================
   // BUILD
   // =========================================================
 
   @override
   Widget build(BuildContext context) {
-
     return Container(
-      height:
-          MediaQuery.of(context).size.height *
-              0.72,
-
-      decoration:
-          const BoxDecoration(
+      height: MediaQuery.of(context).size.height * 0.72,
+      decoration: const BoxDecoration(
         color: Colors.white,
-
-        borderRadius:
-            BorderRadius.vertical(
+        borderRadius: BorderRadius.vertical(
           top: Radius.circular(24),
         ),
       ),
-
       child: Column(
         children: [
-
-          // =================================================
           // HANDLE
-          // =================================================
-
           const SizedBox(height: 8),
 
           Container(
             width: 40,
             height: 4,
-
             decoration: BoxDecoration(
               color: Colors.grey.shade300,
-
-              borderRadius:
-                  BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(10),
             ),
           ),
 
           const SizedBox(height: 12),
 
-
-          // =================================================
           // HEADER
-          // =================================================
-
           Padding(
-            padding:
-                const EdgeInsets.symmetric(
-              horizontal: 16,
-            ),
-
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-
                 Container(
                   width: 42,
                   height: 42,
-
-                  decoration:
-                      BoxDecoration(
-                    color:
-                        Colors.blue.shade50,
-
-                    shape:
-                        BoxShape.circle,
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    shape: BoxShape.circle,
                   ),
-
                   child: const Icon(
                     Icons.history,
                     color: Colors.blue,
@@ -2724,19 +2015,13 @@ class _FloodHistorySheetState
 
                 Expanded(
                   child: Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
-
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-
                       const Text(
                         'Histori Banjir',
-
-                        style:
-                            TextStyle(
+                        style: TextStyle(
                           fontSize: 17,
-                          fontWeight:
-                              FontWeight.bold,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
 
@@ -2744,9 +2029,7 @@ class _FloodHistorySheetState
 
                       Text(
                         widget.sensorId,
-
-                        style:
-                            const TextStyle(
+                        style: const TextStyle(
                           fontSize: 11,
                           color: Colors.grey,
                         ),
@@ -2754,16 +2037,9 @@ class _FloodHistorySheetState
 
                       Text(
                         widget.road.locationName,
-
                         maxLines: 1,
-
-                        overflow:
-                            TextOverflow.ellipsis,
-
-                        style:
-                            const TextStyle(
-                          fontSize: 12,
-                        ),
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 12),
                       ),
                     ],
                   ),
@@ -2773,75 +2049,40 @@ class _FloodHistorySheetState
                   onPressed: () {
                     Navigator.pop(context);
                   },
-
-                  icon:
-                      const Icon(
-                    Icons.close,
-                  ),
+                  icon: const Icon(Icons.close),
                 ),
               ],
             ),
           ),
 
-
           const Divider(height: 20),
 
-
-          // =================================================
           // CURRENT STATUS
-          // =================================================
-
           Padding(
-            padding:
-                const EdgeInsets.symmetric(
-              horizontal: 16,
-            ),
-
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Container(
               width: double.infinity,
-
-              padding:
-                  const EdgeInsets.all(12),
-
-              decoration:
-                  BoxDecoration(
-                color:
-                    _statusColor(
-                  widget.road.status,
-                ).withOpacity(0.08),
-
-                borderRadius:
-                    BorderRadius.circular(12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: _statusColor(widget.road.status)
+                    .withOpacity(0.08),
+                borderRadius: BorderRadius.circular(12),
               ),
-
               child: Row(
                 children: [
-
                   Icon(
-                    _statusIcon(
-                      widget.road.status,
-                    ),
-
-                    color:
-                        _statusColor(
-                      widget.road.status,
-                    ),
-
+                    _statusIcon(widget.road.status),
+                    color: _statusColor(widget.road.status),
                     size: 20,
                   ),
-
                   const SizedBox(width: 8),
-
                   Expanded(
                     child: Text(
                       'Kondisi sekarang: '
                       '${widget.road.waterLevel.toStringAsFixed(1)} cm',
-
-                      style:
-                          const TextStyle(
+                      style: const TextStyle(
                         fontSize: 12,
-                        fontWeight:
-                            FontWeight.w600,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -2850,92 +2091,54 @@ class _FloodHistorySheetState
             ),
           ),
 
-
           const SizedBox(height: 10),
 
-
-          // =================================================
           // HISTORY
-          // =================================================
-
           Expanded(
-            child:
-                FutureBuilder<
-                    List<FloodHistory>>(
+            child: FutureBuilder<List<FloodHistory>>(
               future: _historyFuture,
-
-              builder:
-                  (context, snapshot) {
-
-                // -------------------------------------------
+              builder: (context, snapshot) {
                 // LOADING
-                // -------------------------------------------
-
                 if (snapshot.connectionState ==
                     ConnectionState.waiting) {
-
                   return const Center(
-                    child:
-                        CircularProgressIndicator(),
+                    child: CircularProgressIndicator(),
                   );
                 }
 
-
-                // -------------------------------------------
                 // ERROR
-                // -------------------------------------------
-
                 if (snapshot.hasError) {
-
                   return Center(
                     child: Padding(
-                      padding:
-                          const EdgeInsets.all(
-                        20,
-                      ),
-
+                      padding: const EdgeInsets.all(20),
                       child: Column(
-                        mainAxisSize:
-                            MainAxisSize.min,
-
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-
                           const Icon(
                             Icons.error_outline,
                             color: Colors.red,
                             size: 40,
                           ),
 
-                          const SizedBox(
-                            height: 10,
-                          ),
+                          const SizedBox(height: 10),
 
                           const Text(
                             'Gagal mengambil histori.',
-                            textAlign:
-                                TextAlign.center,
+                            textAlign: TextAlign.center,
                           ),
 
-                          const SizedBox(
-                            height: 10,
-                          ),
+                          const SizedBox(height: 10),
 
                           ElevatedButton(
                             onPressed: () {
-
                               setState(() {
                                 _historyFuture =
-                                    FloodService
-                                        .getFloodHistory(
+                                    FloodService.getFloodHistory(
                                   widget.sensorId,
                                 );
                               });
                             },
-
-                            child:
-                                const Text(
-                              'Coba lagi',
-                            ),
+                            child: const Text('Coba lagi'),
                           ),
                         ],
                       ),
@@ -2943,45 +2146,26 @@ class _FloodHistorySheetState
                   );
                 }
 
+                final histories = snapshot.data ?? [];
 
-                final histories =
-                    snapshot.data ?? [];
-
-
-                // -------------------------------------------
-                // KOSONG
-                // -------------------------------------------
-
+                // EMPTY
                 if (histories.isEmpty) {
-
                   return const Center(
                     child: Padding(
-                      padding:
-                          EdgeInsets.all(20),
-
+                      padding: EdgeInsets.all(20),
                       child: Column(
-                        mainAxisSize:
-                            MainAxisSize.min,
-
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-
                           Icon(
                             Icons.history,
                             size: 45,
                             color: Colors.grey,
                           ),
-
                           SizedBox(height: 10),
-
                           Text(
-                            'Belum ada histori '
-                            'untuk sensor ini.',
-                            textAlign:
-                                TextAlign.center,
-
-                            style: TextStyle(
-                              color: Colors.grey,
-                            ),
+                            'Belum ada histori untuk sensor ini.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.grey),
                           ),
                         ],
                       ),
@@ -2989,26 +2173,16 @@ class _FloodHistorySheetState
                   );
                 }
 
-
-                // -------------------------------------------
-                // LIST HISTORI
-                // -------------------------------------------
-
+                // HISTORY LIST
                 return ListView.builder(
-                  padding:
-                      const EdgeInsets.fromLTRB(
+                  padding: const EdgeInsets.fromLTRB(
                     16,
                     4,
                     16,
                     20,
                   ),
-
-                  itemCount:
-                      histories.length,
-
-                  itemBuilder:
-                      (context, index) {
-
+                  itemCount: histories.length,
+                  itemBuilder: (context, index) {
                     return _buildHistoryItem(
                       histories[index],
                     );
